@@ -69,3 +69,15 @@ loadbalancer:
         - "url2"
         - "urlN"
 ```
+### Settings up Reverse Proxy 
+
+```
+reverseproxy: 
+    service: "on" #on/off 
+    port: "81" #enter port number
+    proxies:
+        - proxy: "/pathforproxy"
+          address: "addressforproxydivert"
+        - proxy: "/pathforproxy"
+          address: "addressforproxydivert"
+```
