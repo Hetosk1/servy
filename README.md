@@ -34,7 +34,7 @@ The whole project runs on a `YAML` configuration file which is located at `/etc/
     After=network.target
 
     [Service]
-    ExecStart=/usr/local/bin/my-lb
+    ExecStart=/usr/local/bin/servy
     Restart=always
     User=root
     Group=root
