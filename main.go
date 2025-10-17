@@ -3,41 +3,75 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
-
-	"load-balancer/config" // YAML Configuration package
-	"load-balancer/loadbalancer" // Load Balancer core package
+	"sync"
+	"servy/config"
+	"servy/loadbalancer"
+	"servy/reverseproxy"
 )
 
 func main() {
-	// Loaded YAML Configuration 
+	// Load YAML configuration
 	cfg, err := config.LoadConfig("/etc/servy/servy.yaml")
 	if err != nil {
 		log.Fatalf("Error loading configuration: %v", err)
 	}
 
 	config.CheckAndLogConfig(cfg)
-	fmt.Println("Configuration loaded successfully.")
+	fmt.Println("✅ Configuration loaded successfully.")
 
-	// Check if loadbalancer switch is on
-	if cfg.LoadBalancer.Service != "on" {
-		fmt.Println("Load balancer service is not set to 'on'. Exiting.")
-		os.Exit(0)
+	// WaitGroup to keep main alive while goroutines run
+	var wg sync.WaitGroup
+
+	// ========== Load Balancer ==========
+	if cfg.LoadBalancer.Service == "on" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fmt.Println("🚀 Starting Load Balancer service...")
+
+			var servers []loadbalancer.Server
+			for _, address := range cfg.LoadBalancer.Servers {
+				server, err := loadbalancer.NewSimpleServer(address)
+				if err != nil {
+					log.Fatalf("❌ Error creating Load Balancer server (%s): %v", address, err)
+				}
+				servers = append(servers, server)
+			}
+
+			lb := loadbalancer.NewLoadBalancer(cfg.LoadBalancer.Port, servers)
+			if err := lb.Run(); err != nil {
+				log.Fatalf("💥 Load Balancer failed: %v", err)
+			}
+		}()
+	} else {
+		fmt.Println("⛔ Load Balancer service: OFF")
 	}
 
-	// Load Servers into the load balancer
-	servers := []loadbalancer.Server{}
-	for _, address := range cfg.LoadBalancer.Servers {
-		server, err := loadbalancer.NewSimpleServer(address)
-		if err != nil {
-			log.Fatalf("Error creating simple server for address %s: %v", address, err)
-		}
-		servers = append(servers, server)
+	// ========== Reverse Proxy (NOT IMPLEMENTED) ==========
+	
+
+	if cfg.ReverseProxy.Service == "on" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fmt.Println("Starting Reverse Proxy services...")
+
+			rp, err := reverseproxy.NewReverseProxy(cfg.ReverseProxy.Port, cfg.ReverseProxy.Proxies)
+			if err != nil {
+				log.Fatalf("Error starting reverse proxy services: %v", err)
+			}
+
+			err = rp.Run() // no colon here
+			if err != nil {
+				log.Fatalf("Error running reverse proxy services: %v", err)
+				return
+			}
+
+		}()
+	} else {
+		fmt.Println("⛔ Reverse Proxy service: OFF")
 	}
 
-	// Spinning up the Load Balancer
-	lb := loadbalancer.NewLoadBalancer(cfg.LoadBalancer.Port, servers)
-	if err := lb.Run(); err != nil {
-		log.Fatalf("Load Balancer failed to run: %v", err)
-	}
+	// Wait for all running services (currently only the load balancer) to finish.
+	wg.Wait()
 }

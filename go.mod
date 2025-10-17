@@ -1,4 +1,4 @@
-module load-balancer
+module servy
 
 go 1.22.2
 
