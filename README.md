@@ -10,7 +10,7 @@ The whole project runs on a `YAML` configuration file which is located at `/etc/
 1. Build Code 
 
     ```
-    go built -o servy main.go
+    go build -o servy main.go
     ```
 
 2. Move Code to Binaries 
