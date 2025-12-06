@@ -1,4 +1,4 @@
-![poster](./poster.png)
+![poster](./image.png)
 
 # Servy 
 
