@@ -1,3 +1,5 @@
+![poster](./poster.png)
+
 # Servy 
 
 A open-source server configuration tool written in go, i.e. can be used for load balancing, reverse proxy and static site serving and a lot more.
